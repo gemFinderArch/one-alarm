@@ -2,27 +2,20 @@ import { Platform } from 'react-native';
 import { BACKGROUND_ALARM_TASK } from '../lib/constants';
 import { getLocation, getAutoUpdate, saveLastSynced } from '../lib/storage';
 import { getNextAlarmTimes } from '../lib/sunrise';
-import { scheduleBrahmaMuhurtaAlarm, schedulePrepareForSleepAlarm } from '../lib/alarm-scheduler';
-import { scheduleSleepReminder, cancelSleepReminder } from '../lib/sleep-notifier';
+import { syncBothAlarms } from '../lib/alarm-scheduler';
 
 /**
- * Recalculate alarm times and reschedule both alarms.
- * Used both by background fetch and foreground recalculation.
+ * Recalculate alarm times and reschedule both native alarms silently.
  * Only runs if autoUpdate is enabled.
  */
 export async function recalculateAndSchedule(): Promise<void> {
-  const location = await getLocation();
-  const autoUpdate = await getAutoUpdate();
-
+  const [location, autoUpdate] = await Promise.all([getLocation(), getAutoUpdate()]);
   if (!location || !autoUpdate) return;
 
   const times = getNextAlarmTimes(location.latitude, location.longitude);
   if (!times) return;
 
-  await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
-  await schedulePrepareForSleepAlarm(times.prepareForSleepTime);
-  await cancelSleepReminder();
-  await scheduleSleepReminder(times.prepareForSleepTime);
+  await syncBothAlarms(times.brahmaMuhurta, times.prepareForSleepTime);
   await saveLastSynced(new Date());
 }
 
@@ -41,9 +34,6 @@ if (Platform.OS !== 'web') {
   });
 }
 
-/**
- * Register the background fetch task to run every 12 hours. No-op on web.
- */
 export async function registerBackgroundAlarmTask(): Promise<void> {
   if (Platform.OS === 'web') return;
 
@@ -60,9 +50,6 @@ export async function registerBackgroundAlarmTask(): Promise<void> {
   });
 }
 
-/**
- * Unregister the background fetch task. No-op on web.
- */
 export async function unregisterBackgroundAlarmTask(): Promise<void> {
   if (Platform.OS === 'web') return;
 

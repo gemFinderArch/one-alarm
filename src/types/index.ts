@@ -6,9 +6,9 @@ export interface LocationData {
 
 export interface AlarmTimes {
   sunrise: Date;
+  sunset: Date;
   brahmaMuhurta: Date;
   prepareForSleepTime: Date;
-  sleepTime: Date;
 }
 
 export interface AlarmState {

@@ -1,4 +1,4 @@
-import { BRAHMA_MUHURTA_OFFSET_MINUTES, PREPARE_FOR_SLEEP_HOURS, SLEEP_BEFORE_ALARM_HOURS } from './constants';
+import { BRAHMA_MUHURTA_OFFSET_MINUTES, PREPARE_FOR_SLEEP_HOURS } from './constants';
 import type { AlarmTimes } from '../types';
 
 /**
@@ -108,6 +108,37 @@ function calcSunriseUTC(JD: number, lat: number, lng: number): number | null {
 }
 
 /**
+ * Calculate sunset time in minutes from midnight UTC using the NOAA algorithm.
+ * Mirror of calcSunriseUTC but using (lng - HA) for sunset.
+ * Returns null for polar latitudes with no sunset.
+ */
+function calcSunsetUTC(JD: number, lat: number, lng: number): number | null {
+  const zenith = 90.833;
+  const latRad = toRad(lat);
+
+  // First pass: compute at noon
+  const T0 = (JD - 2451545.0) / 36525.0;
+  const { dec: dec0, eqTime: eqTime0 } = solarParams(T0);
+
+  let cosHA = (Math.cos(toRad(zenith)) / (Math.cos(latRad) * Math.cos(dec0))) - Math.tan(latRad) * Math.tan(dec0);
+  if (cosHA > 1 || cosHA < -1) return null;
+
+  const HA0 = toDeg(Math.acos(cosHA));
+  const sunset0 = 720 - 4 * (lng - HA0) - eqTime0;
+
+  // Second pass: recompute at the approximate sunset time for better precision
+  const JDsunset = JD + sunset0 / 1440.0;
+  const T1 = (JDsunset - 2451545.0) / 36525.0;
+  const { dec: dec1, eqTime: eqTime1 } = solarParams(T1);
+
+  cosHA = (Math.cos(toRad(zenith)) / (Math.cos(latRad) * Math.cos(dec1))) - Math.tan(latRad) * Math.tan(dec1);
+  if (cosHA > 1 || cosHA < -1) return null;
+
+  const HA1 = toDeg(Math.acos(cosHA));
+  return 720 - 4 * (lng - HA1) - eqTime1;
+}
+
+/**
  * Get the sunrise time for a given date and location.
  * Uses the NOAA Solar Calculator algorithm for high precision.
  * Returns null if sunrise doesn't occur (polar latitudes).
@@ -131,6 +162,28 @@ export function getSunrise(date: Date, lat: number, lng: number): Date | null {
 }
 
 /**
+ * Get the sunset time for a given date and location.
+ * Uses the NOAA Solar Calculator algorithm for high precision.
+ * Returns null if sunset doesn't occur (polar latitudes).
+ */
+export function getSunset(date: Date, lat: number, lng: number): Date | null {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const JD = getJulianDay(year, month, day);
+
+  const sunsetUTC = calcSunsetUTC(JD, lat, lng);
+  if (sunsetUTC === null) return null;
+
+  const result = new Date(date);
+  result.setUTCHours(0, 0, 0, 0);
+  const totalMs = sunsetUTC * 60 * 1000;
+  result.setTime(result.getTime() + totalMs);
+
+  return result;
+}
+
+/**
  * Get the Brahma Muhurta time (96 minutes before sunrise).
  */
 export function getBrahmaMuhurta(sunrise: Date): Date {
@@ -146,14 +199,6 @@ export function getPrepareForSleepTime(brahmaMuhurtaTime: Date): Date {
 }
 
 /**
- * Get the recommended sleep time (7.5 hours before the Brahma Muhurta alarm).
- * Display only - actual lights-out time.
- */
-export function getSleepTime(brahmaMuhurtaTime: Date): Date {
-  return new Date(brahmaMuhurtaTime.getTime() - SLEEP_BEFORE_ALARM_HOURS * 60 * 60 * 1000);
-}
-
-/**
  * Calculate all alarm-related times for a given date and location.
  * Returns null if sunrise doesn't occur at this latitude/date.
  */
@@ -161,11 +206,13 @@ export function getAlarmTimes(date: Date, lat: number, lng: number): AlarmTimes 
   const sunrise = getSunrise(date, lat, lng);
   if (!sunrise) return null;
 
+  const sunset = getSunset(date, lat, lng);
+  if (!sunset) return null;
+
   const brahmaMuhurta = getBrahmaMuhurta(sunrise);
   const prepareForSleepTime = getPrepareForSleepTime(brahmaMuhurta);
-  const sleepTime = getSleepTime(brahmaMuhurta);
 
-  return { sunrise, brahmaMuhurta, prepareForSleepTime, sleepTime };
+  return { sunrise, sunset, brahmaMuhurta, prepareForSleepTime };
 }
 
 /**

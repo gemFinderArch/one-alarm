@@ -1,18 +1,26 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  Switch,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { formatTime } from '../lib/format';
 
 interface AlarmCardProps {
-  alarmTime: Date | null;
+  brahmaMuhurtaTime: Date | null;
+  pradoshaKaalTime: Date | null;
   autoUpdate: boolean;
   lastSynced: Date | null;
+  syncing: boolean;
   onSync: () => void;
-  onDisable: () => void;
   onToggleAutoUpdate: () => void;
 }
 
 function formatLastSynced(date: Date | null): string {
-  if (!date || date.getTime() === 0) return 'Not synced';
+  if (!date) return 'Not synced';
 
   const now = new Date();
   const isToday =
@@ -21,7 +29,6 @@ function formatLastSynced(date: Date | null): string {
     date.getFullYear() === now.getFullYear();
 
   const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
   if (isToday) return `Last synced: today ${time}`;
 
   const yesterday = new Date(now);
@@ -30,7 +37,6 @@ function formatLastSynced(date: Date | null): string {
     date.getDate() === yesterday.getDate() &&
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
-
   if (isYesterday) return `Last synced: yesterday ${time}`;
 
   const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -38,26 +44,41 @@ function formatLastSynced(date: Date | null): string {
 }
 
 export default function AlarmCard({
-  alarmTime,
+  brahmaMuhurtaTime,
+  pradoshaKaalTime,
   autoUpdate,
   lastSynced,
+  syncing,
   onSync,
-  onDisable,
   onToggleAutoUpdate,
 }: AlarmCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Brahma Muhurta</Text>
-      <Text style={styles.time}>{formatTime(alarmTime)}</Text>
+      <Text style={styles.time}>{formatTime(brahmaMuhurtaTime)}</Text>
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.syncButton} onPress={onSync} activeOpacity={0.7}>
+      <View style={styles.divider} />
+
+      <Text style={styles.label}>Pradosha Kaal</Text>
+      <Text style={styles.time}>{formatTime(pradoshaKaalTime)}</Text>
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.syncButton,
+          pressed && styles.syncButtonPressed,
+          syncing && styles.buttonDisabled,
+        ]}
+        onPress={onSync}
+        disabled={syncing}
+        accessibilityLabel="Sync alarms to device"
+        accessibilityRole="button"
+      >
+        {syncing ? (
+          <ActivityIndicator size="small" color="#0D0D0D" />
+        ) : (
           <Text style={styles.syncButtonText}>Sync</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.disableButton} onPress={onDisable} activeOpacity={0.7}>
-          <Text style={styles.disableButtonText}>Disable</Text>
-        </TouchableOpacity>
-      </View>
+        )}
+      </Pressable>
 
       <View style={styles.autoUpdateRow}>
         <Text style={styles.autoUpdateLabel}>Auto-Update</Text>
@@ -67,7 +88,7 @@ export default function AlarmCard({
           trackColor={{ false: '#333333', true: '#FFB800' }}
           thumbColor={autoUpdate ? '#FFFFFF' : '#888888'}
           style={styles.autoUpdateSwitch}
-          accessibilityLabel="Toggle automatic alarm updates"
+          accessibilityLabel="Toggle automatic daily alarm updates"
         />
       </View>
 
@@ -98,37 +119,35 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 56,
     fontWeight: '200',
-    marginBottom: 20,
     color: '#FFFFFF',
+    marginBottom: 4,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+  divider: {
+    width: 40,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#444444',
+    marginVertical: 16,
   },
   syncButton: {
     backgroundColor: '#FFB800',
     borderRadius: 10,
-    paddingHorizontal: 28,
+    paddingHorizontal: 32,
     paddingVertical: 12,
+    minWidth: 100,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  syncButtonPressed: {
+    backgroundColor: '#E5A600',
   },
   syncButtonText: {
     color: '#0D0D0D',
     fontSize: 15,
     fontWeight: '700',
   },
-  disableButton: {
-    backgroundColor: '#2A2A2A',
-    borderRadius: 10,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#444444',
-  },
-  disableButtonText: {
-    color: '#999999',
-    fontSize: 15,
-    fontWeight: '600',
+  buttonDisabled: {
+    opacity: 0.6,
   },
   autoUpdateRow: {
     flexDirection: 'row',

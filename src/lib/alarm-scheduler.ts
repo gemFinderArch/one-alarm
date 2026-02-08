@@ -2,71 +2,57 @@ import { Platform } from 'react-native';
 import { ALARM_MESSAGE, PREPARE_FOR_SLEEP_MESSAGE } from './constants';
 
 /**
- * Schedule a native alarm for the Brahma Muhurta time.
- * Uses Android's AlarmClock ACTION_SET_ALARM intent via expo-alarm.
- * No-op on web.
+ * expo-alarm wraps Android AlarmClock intents.
+ *
+ * 1. setAlarm uses startActivityForResult — the returned promise often
+ *    never resolves when skipUi is true.  We fire-and-forget.
+ *
+ * 2. Android can only process one AlarmClock intent at a time.  Two
+ *    dispatched back-to-back → second silently dropped.  We sequence
+ *    with a 700 ms gap.
+ *
+ * RULE: Native alarms are ONLY set via syncBothAlarms (Sync button)
+ *       or scheduleBothAlarmsSilent (background task).  Nothing else.
  */
-export async function scheduleBrahmaMuhurtaAlarm(alarmTime: Date): Promise<void> {
+
+const INTENT_GAP_MS = 700;
+
+function fire(fn: () => Promise<unknown>): void {
+  fn().catch(() => {});
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Set both native alarms silently.  No-op on web.
+ * Used by both manual Sync and background task.
+ */
+export async function syncBothAlarms(bmTime: Date, pkTime: Date): Promise<void> {
   if (Platform.OS === 'web') return;
 
   const { setAlarm } = await import('expo-alarm');
-  const hour = alarmTime.getHours();
-  const minutes = alarmTime.getMinutes();
 
-  await setAlarm({
-    hour,
-    minutes,
-    message: ALARM_MESSAGE,
-    vibrate: true,
-    skipUi: true,
-  });
-}
+  fire(() =>
+    setAlarm({
+      hour: bmTime.getHours(),
+      minutes: bmTime.getMinutes(),
+      message: ALARM_MESSAGE,
+      vibrate: true,
+      skipUi: true,
+    }),
+  );
 
-/**
- * Attempt to cancel the Brahma Muhurta alarm. No-op on web.
- */
-export async function cancelBrahmaMuhurtaAlarm(): Promise<void> {
-  if (Platform.OS === 'web') return;
+  await wait(INTENT_GAP_MS);
 
-  try {
-    const { dismissAlarm } = await import('expo-alarm');
-    await dismissAlarm({ searchMode: 'android.label', extra: { 'android.intent.extra.alarm.MESSAGE': ALARM_MESSAGE } });
-  } catch {
-    // Best-effort: dismissAlarm may not cancel a future alarm on all devices
-  }
-}
-
-/**
- * Schedule a native alarm for the Prepare for Sleep time.
- * Uses Android's AlarmClock ACTION_SET_ALARM intent via expo-alarm.
- * No-op on web.
- */
-export async function schedulePrepareForSleepAlarm(alarmTime: Date): Promise<void> {
-  if (Platform.OS === 'web') return;
-
-  const { setAlarm } = await import('expo-alarm');
-  const hour = alarmTime.getHours();
-  const minutes = alarmTime.getMinutes();
-
-  await setAlarm({
-    hour,
-    minutes,
-    message: PREPARE_FOR_SLEEP_MESSAGE,
-    vibrate: true,
-    skipUi: true,
-  });
-}
-
-/**
- * Attempt to cancel the Prepare for Sleep alarm. No-op on web.
- */
-export async function cancelPrepareForSleepAlarm(): Promise<void> {
-  if (Platform.OS === 'web') return;
-
-  try {
-    const { dismissAlarm } = await import('expo-alarm');
-    await dismissAlarm({ searchMode: 'android.label', extra: { 'android.intent.extra.alarm.MESSAGE': PREPARE_FOR_SLEEP_MESSAGE } });
-  } catch {
-    // Best-effort: dismissAlarm may not cancel a future alarm on all devices
-  }
+  fire(() =>
+    setAlarm({
+      hour: pkTime.getHours(),
+      minutes: pkTime.getMinutes(),
+      message: PREPARE_FOR_SLEEP_MESSAGE,
+      vibrate: true,
+      skipUi: true,
+    }),
+  );
 }

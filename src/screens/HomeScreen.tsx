@@ -17,20 +17,25 @@ import { setupNotificationChannel } from '../lib/sleep-notifier';
 import { registerBackgroundAlarmTask } from '../tasks/recalculate-alarm';
 import AlarmCard from '../components/AlarmCard';
 import SunriseInfo from '../components/SunriseInfo';
-import SleepReminder from '../components/SleepReminder';
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { location, loading, reloadFromStorage } = useLocation();
-  const { alarmTimes, autoUpdate, lastSynced, syncAlarms, disableAlarms, toggleAutoUpdate } = useAlarmState(location);
+  const {
+    alarmTimes,
+    autoUpdate,
+    lastSynced,
+    syncing,
+    syncAlarms,
+    toggleAutoUpdate,
+  } = useAlarmState(location);
 
   useEffect(() => {
     setupNotificationChannel();
     registerBackgroundAlarmTask().catch(() => {});
   }, []);
 
-  // Reload location from storage when screen gains focus (after Settings changes)
   useFocusEffect(
     useCallback(() => {
       reloadFromStorage();
@@ -71,20 +76,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <AlarmCard
-          alarmTime={alarmTimes?.brahmaMuhurta ?? null}
+          brahmaMuhurtaTime={alarmTimes?.brahmaMuhurta ?? null}
+          pradoshaKaalTime={alarmTimes?.prepareForSleepTime ?? null}
           autoUpdate={autoUpdate}
           lastSynced={lastSynced}
+          syncing={syncing}
           onSync={syncAlarms}
-          onDisable={disableAlarms}
           onToggleAutoUpdate={toggleAutoUpdate}
         />
         <SunriseInfo
           sunriseTime={alarmTimes?.sunrise ?? null}
+          sunsetTime={alarmTimes?.sunset ?? null}
           city={location.city}
-        />
-        <SleepReminder
-          prepareForSleepTime={alarmTimes?.prepareForSleepTime ?? null}
-          sleepTime={alarmTimes?.sleepTime ?? null}
         />
       </ScrollView>
       <TouchableOpacity
