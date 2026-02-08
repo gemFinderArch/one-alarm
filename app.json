@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "one-alarm",
+    "slug": "one-alarm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D0D"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D0D0D"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "com.android.alarm.permission.SET_ALARM",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.VIBRATE"
+      ],
+      "package": "com.gemfinderarch.onealarm"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-notifications",
+      "expo-background-fetch",
+      "expo-task-manager"
+    ]
+  }
+}
