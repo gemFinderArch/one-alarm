@@ -11,6 +11,9 @@ import { formatTime } from '../lib/format';
 
 interface AlarmCardProps {
   brahmaMuhurtaTime: Date | null;
+  godhuliKaalReminderTime: Date | null;
+  godhuliKaalTime: Date | null;
+  pradoshaKaalReminderTime: Date | null;
   pradoshaKaalTime: Date | null;
   autoUpdate: boolean;
   lastSynced: Date | null;
@@ -45,6 +48,9 @@ function formatLastSynced(date: Date | null): string {
 
 export default function AlarmCard({
   brahmaMuhurtaTime,
+  godhuliKaalReminderTime,
+  godhuliKaalTime,
+  pradoshaKaalReminderTime,
   pradoshaKaalTime,
   autoUpdate,
   lastSynced,
@@ -58,6 +64,21 @@ export default function AlarmCard({
       <Text style={styles.time}>{formatTime(brahmaMuhurtaTime)}</Text>
 
       <View style={styles.divider} />
+
+      <Text style={styles.reminderLabel}>30 Min Until Godhuli Kaal</Text>
+      <Text style={styles.reminderTime}>{formatTime(godhuliKaalReminderTime)}</Text>
+
+      <View style={styles.dividerSmall} />
+
+      <Text style={styles.label}>Godhuli Kaal</Text>
+      <Text style={styles.time}>{formatTime(godhuliKaalTime)}</Text>
+
+      <View style={styles.divider} />
+
+      <Text style={styles.reminderLabel}>30 Min Until Pradosha Kaal</Text>
+      <Text style={styles.reminderTime}>{formatTime(pradoshaKaalReminderTime)}</Text>
+
+      <View style={styles.dividerSmall} />
 
       <Text style={styles.label}>Pradosha Kaal</Text>
       <Text style={styles.time}>{formatTime(pradoshaKaalTime)}</Text>
@@ -122,11 +143,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
+  reminderLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+    color: '#888888',
+  },
+  reminderTime: {
+    fontSize: 32,
+    fontWeight: '200',
+    color: '#AAAAAA',
+    marginBottom: 4,
+  },
   divider: {
     width: 40,
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#444444',
     marginVertical: 16,
+  },
+  dividerSmall: {
+    width: 24,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#333333',
+    marginVertical: 10,
   },
   syncButton: {
     backgroundColor: '#FFB800',

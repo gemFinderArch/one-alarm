@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { formatTime } from '../lib/format';
+import { formatTime, formatShortDate } from '../lib/format';
 
 interface SunriseInfoProps {
   sunriseTime: Date | null;
@@ -8,27 +8,45 @@ interface SunriseInfoProps {
   city: string | null;
 }
 
+interface RowData {
+  icon: string;
+  label: string;
+  time: Date | null;
+}
+
+function SolarRow({ icon, label, time }: RowData) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.textBlock}>
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.date}>{formatShortDate(time)}</Text>
+        </View>
+        <Text style={styles.time}>{formatTime(time)}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function SunriseInfo({ sunriseTime, sunsetTime, city }: SunriseInfoProps) {
+  // Whichever comes next goes on top
+  const sunriseFirst =
+    !sunsetTime || (sunriseTime && sunriseTime <= sunsetTime);
+
+  const first: RowData = sunriseFirst
+    ? { icon: '\u2600', label: 'Sunrise', time: sunriseTime }
+    : { icon: '\uD83C\uDF05', label: 'Sunset', time: sunsetTime };
+
+  const second: RowData = sunriseFirst
+    ? { icon: '\uD83C\uDF05', label: 'Sunset', time: sunsetTime }
+    : { icon: '\u2600', label: 'Sunrise', time: sunriseTime };
+
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
-        <Text style={styles.icon}>{'\u2600'}</Text>
-        <View style={styles.textBlock}>
-          <Text style={styles.label}>Sunrise</Text>
-          <Text style={styles.time}>{formatTime(sunriseTime)}</Text>
-        </View>
-      </View>
-
+      <SolarRow {...first} />
       <View style={styles.divider} />
-
-      <View style={styles.row}>
-        <Text style={styles.icon}>{'\uD83C\uDF05'}</Text>
-        <View style={styles.textBlock}>
-          <Text style={styles.label}>Sunset</Text>
-          <Text style={styles.time}>{formatTime(sunsetTime)}</Text>
-        </View>
-      </View>
-
+      <SolarRow {...second} />
       {city && <Text style={styles.city}>{city}</Text>}
     </View>
   );
@@ -58,12 +76,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  labelRow: {
+    flexDirection: 'column',
+  },
   label: {
     fontSize: 13,
     fontWeight: '600',
     color: '#999999',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  date: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: '#666666',
+    marginTop: 2,
   },
   time: {
     fontSize: 24,

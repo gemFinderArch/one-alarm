@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import type { LocationData, AlarmTimes } from '../types';
 import { getNextAlarmTimes } from '../lib/sunrise';
 import { saveAutoUpdate, getAutoUpdate, saveLastSynced, getLastSynced } from '../lib/storage';
-import { syncBothAlarms } from '../lib/alarm-scheduler';
+import { syncAllAlarms } from '../lib/alarm-scheduler';
 import { registerBackgroundAlarmTask, unregisterBackgroundAlarmTask } from '../tasks/recalculate-alarm';
 
 export function useAlarmState(location: LocationData | null) {
@@ -50,7 +50,13 @@ export function useAlarmState(location: LocationData | null) {
     if (!alarmTimes || syncing) return;
     setSyncing(true);
     try {
-      await syncBothAlarms(alarmTimes.brahmaMuhurta, alarmTimes.prepareForSleepTime);
+      await syncAllAlarms(
+        alarmTimes.brahmaMuhurta,
+        alarmTimes.godhuliKaalReminderTime,
+        alarmTimes.godhuliKaalTime,
+        alarmTimes.pradoshaKaalReminderTime,
+        alarmTimes.pradoshaKaalTime,
+      );
       const now = new Date();
       await saveLastSynced(now);
       setLastSynced(now);

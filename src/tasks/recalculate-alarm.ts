@@ -2,10 +2,10 @@ import { Platform } from 'react-native';
 import { BACKGROUND_ALARM_TASK } from '../lib/constants';
 import { getLocation, getAutoUpdate, saveLastSynced } from '../lib/storage';
 import { getNextAlarmTimes } from '../lib/sunrise';
-import { syncBothAlarms } from '../lib/alarm-scheduler';
+import { syncAllAlarms } from '../lib/alarm-scheduler';
 
 /**
- * Recalculate alarm times and reschedule both native alarms silently.
+ * Recalculate alarm times and reschedule all five native alarms silently.
  * Only runs if autoUpdate is enabled.
  */
 export async function recalculateAndSchedule(): Promise<void> {
@@ -15,7 +15,13 @@ export async function recalculateAndSchedule(): Promise<void> {
   const times = getNextAlarmTimes(location.latitude, location.longitude);
   if (!times) return;
 
-  await syncBothAlarms(times.brahmaMuhurta, times.prepareForSleepTime);
+  await syncAllAlarms(
+    times.brahmaMuhurta,
+    times.godhuliKaalReminderTime,
+    times.godhuliKaalTime,
+    times.pradoshaKaalReminderTime,
+    times.pradoshaKaalTime,
+  );
   await saveLastSynced(new Date());
 }
 

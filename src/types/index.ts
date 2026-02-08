@@ -8,7 +8,10 @@ export interface AlarmTimes {
   sunrise: Date;
   sunset: Date;
   brahmaMuhurta: Date;
-  prepareForSleepTime: Date;
+  godhuliKaalReminderTime: Date;
+  godhuliKaalTime: Date;
+  pradoshaKaalReminderTime: Date;
+  pradoshaKaalTime: Date;
 }
 
 export interface AlarmState {

@@ -1,5 +1,11 @@
 export const BRAHMA_MUHURTA_OFFSET_MINUTES = 96; // 1h 36min before sunrise
-export const PREPARE_FOR_SLEEP_HOURS = 9; // 9h before BM (wind-down reminder)
+export const GODHULI_KAAL_HOURS = 12; // 12h before next BM (evening transition)
+export const GODHULI_KAAL_REMINDER_MINUTES = 30; // 30min before Godhuli Kaal
+export const PRADOSHA_KAAL_HOURS = 8.5; // 8.5h before next BM (wind-down)
+export const PRADOSHA_KAAL_REMINDER_HOURS = 9; // 9h before next BM (30min reminder)
 export const ALARM_MESSAGE = 'Brahma Muhurta';
-export const PREPARE_FOR_SLEEP_MESSAGE = 'Pradosha Kaal';
+export const GODHULI_KAAL_REMINDER_MESSAGE = '30 Minutes Until Godhuli Kaal';
+export const GODHULI_KAAL_MESSAGE = 'Godhuli Kaal';
+export const PRADOSHA_KAAL_REMINDER_MESSAGE = '30 Minutes Until Pradosha Kaal';
+export const PRADOSHA_KAAL_MESSAGE = 'Pradosha Kaal';
 export const BACKGROUND_ALARM_TASK = 'BACKGROUND_ALARM_RECALCULATE';

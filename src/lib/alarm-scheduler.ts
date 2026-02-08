@@ -1,5 +1,11 @@
 import { Platform } from 'react-native';
-import { ALARM_MESSAGE, PREPARE_FOR_SLEEP_MESSAGE } from './constants';
+import {
+  ALARM_MESSAGE,
+  GODHULI_KAAL_REMINDER_MESSAGE,
+  GODHULI_KAAL_MESSAGE,
+  PRADOSHA_KAAL_REMINDER_MESSAGE,
+  PRADOSHA_KAAL_MESSAGE,
+} from './constants';
 
 /**
  * expo-alarm wraps Android AlarmClock intents.
@@ -11,8 +17,8 @@ import { ALARM_MESSAGE, PREPARE_FOR_SLEEP_MESSAGE } from './constants';
  *    dispatched back-to-back → second silently dropped.  We sequence
  *    with a 700 ms gap.
  *
- * RULE: Native alarms are ONLY set via syncBothAlarms (Sync button)
- *       or scheduleBothAlarmsSilent (background task).  Nothing else.
+ * RULE: Native alarms are ONLY set via syncAllAlarms (Sync button)
+ *       or background task.  Nothing else.
  */
 
 const INTENT_GAP_MS = 700;
@@ -26,10 +32,18 @@ function wait(ms: number): Promise<void> {
 }
 
 /**
- * Set both native alarms silently.  No-op on web.
+ * Set all five native alarms silently.  No-op on web.
  * Used by both manual Sync and background task.
+ *
+ * Order: BM → GK reminder → GK → PK reminder → PK
  */
-export async function syncBothAlarms(bmTime: Date, pkTime: Date): Promise<void> {
+export async function syncAllAlarms(
+  bmTime: Date,
+  gkReminderTime: Date,
+  gkTime: Date,
+  pkReminderTime: Date,
+  pkTime: Date,
+): Promise<void> {
   if (Platform.OS === 'web') return;
 
   const { setAlarm } = await import('expo-alarm');
@@ -48,9 +62,45 @@ export async function syncBothAlarms(bmTime: Date, pkTime: Date): Promise<void> 
 
   fire(() =>
     setAlarm({
+      hour: gkReminderTime.getHours(),
+      minutes: gkReminderTime.getMinutes(),
+      message: GODHULI_KAAL_REMINDER_MESSAGE,
+      vibrate: true,
+      skipUi: true,
+    }),
+  );
+
+  await wait(INTENT_GAP_MS);
+
+  fire(() =>
+    setAlarm({
+      hour: gkTime.getHours(),
+      minutes: gkTime.getMinutes(),
+      message: GODHULI_KAAL_MESSAGE,
+      vibrate: true,
+      skipUi: true,
+    }),
+  );
+
+  await wait(INTENT_GAP_MS);
+
+  fire(() =>
+    setAlarm({
+      hour: pkReminderTime.getHours(),
+      minutes: pkReminderTime.getMinutes(),
+      message: PRADOSHA_KAAL_REMINDER_MESSAGE,
+      vibrate: true,
+      skipUi: true,
+    }),
+  );
+
+  await wait(INTENT_GAP_MS);
+
+  fire(() =>
+    setAlarm({
       hour: pkTime.getHours(),
       minutes: pkTime.getMinutes(),
-      message: PREPARE_FOR_SLEEP_MESSAGE,
+      message: PRADOSHA_KAAL_MESSAGE,
       vibrate: true,
       skipUi: true,
     }),

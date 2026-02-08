@@ -77,7 +77,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <AlarmCard
           brahmaMuhurtaTime={alarmTimes?.brahmaMuhurta ?? null}
-          pradoshaKaalTime={alarmTimes?.prepareForSleepTime ?? null}
+          godhuliKaalReminderTime={alarmTimes?.godhuliKaalReminderTime ?? null}
+          godhuliKaalTime={alarmTimes?.godhuliKaalTime ?? null}
+          pradoshaKaalReminderTime={alarmTimes?.pradoshaKaalReminderTime ?? null}
+          pradoshaKaalTime={alarmTimes?.pradoshaKaalTime ?? null}
           autoUpdate={autoUpdate}
           lastSynced={lastSynced}
           syncing={syncing}

@@ -1,4 +1,10 @@
-import { BRAHMA_MUHURTA_OFFSET_MINUTES, PREPARE_FOR_SLEEP_HOURS } from './constants';
+import {
+  BRAHMA_MUHURTA_OFFSET_MINUTES,
+  GODHULI_KAAL_HOURS,
+  GODHULI_KAAL_REMINDER_MINUTES,
+  PRADOSHA_KAAL_HOURS,
+  PRADOSHA_KAAL_REMINDER_HOURS,
+} from './constants';
 import type { AlarmTimes } from '../types';
 
 /**
@@ -191,50 +197,48 @@ export function getBrahmaMuhurta(sunrise: Date): Date {
 }
 
 /**
- * Get the "Prepare for Sleep" time (9 hours before Brahma Muhurta).
- * This is the wind-down reminder, set as a native alarm.
- */
-export function getPrepareForSleepTime(brahmaMuhurtaTime: Date): Date {
-  return new Date(brahmaMuhurtaTime.getTime() - PREPARE_FOR_SLEEP_HOURS * 60 * 60 * 1000);
-}
-
-/**
- * Calculate all alarm-related times for a given date and location.
- * Returns null if sunrise doesn't occur at this latitude/date.
- */
-export function getAlarmTimes(date: Date, lat: number, lng: number): AlarmTimes | null {
-  const sunrise = getSunrise(date, lat, lng);
-  if (!sunrise) return null;
-
-  const sunset = getSunset(date, lat, lng);
-  if (!sunset) return null;
-
-  const brahmaMuhurta = getBrahmaMuhurta(sunrise);
-  const prepareForSleepTime = getPrepareForSleepTime(brahmaMuhurta);
-
-  return { sunrise, sunset, brahmaMuhurta, prepareForSleepTime };
-}
-
-/**
  * Get the next relevant alarm times.
- * If today's Brahma Muhurta hasn't passed, use today.
- * Otherwise use tomorrow.
+ *
+ * The entire daily cycle pivots on Brahma Muhurta:
+ * - Once today's BM passes, EVERYTHING flips to tomorrow's sunrise.
+ * - Press Sync at wake-up → all alarms set for the next cycle.
+ * - No need to touch the phone again until tomorrow's BM rings.
  */
 export function getNextAlarmTimes(lat: number, lng: number): AlarmTimes | null {
   const now = new Date();
 
-  // Try today first
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
-  const todayTimes = getAlarmTimes(today, lat, lng);
-
-  if (todayTimes && todayTimes.brahmaMuhurta > now) {
-    return todayTimes;
-  }
-
-  // Today's Brahma Muhurta has passed (or no sunrise today), use tomorrow
-  const tomorrow = new Date(now);
+  const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  return getAlarmTimes(tomorrow, lat, lng);
+
+  // Check if today's BM has passed — that's the flip trigger
+  const todaySunrise = getSunrise(today, lat, lng);
+  const todayBM = todaySunrise ? getBrahmaMuhurta(todaySunrise) : null;
+  const bmPassed = !todayBM || todayBM <= now;
+
+  // Once BM passes, entire cycle flips to tomorrow
+  const targetDay = bmPassed ? tomorrow : today;
+  const sunrise = bmPassed ? getSunrise(tomorrow, lat, lng) : todaySunrise;
+  if (!sunrise) return null;
+
+  const sunset = getSunset(targetDay, lat, lng);
+  if (!sunset) return null;
+
+  const brahmaMuhurta = getBrahmaMuhurta(sunrise);
+
+  const godhuliKaalTime = new Date(brahmaMuhurta.getTime() - GODHULI_KAAL_HOURS * 60 * 60 * 1000);
+  const godhuliKaalReminderTime = new Date(godhuliKaalTime.getTime() - GODHULI_KAAL_REMINDER_MINUTES * 60 * 1000);
+  const pradoshaKaalTime = new Date(brahmaMuhurta.getTime() - PRADOSHA_KAAL_HOURS * 60 * 60 * 1000);
+  const pradoshaKaalReminderTime = new Date(brahmaMuhurta.getTime() - PRADOSHA_KAAL_REMINDER_HOURS * 60 * 60 * 1000);
+
+  return {
+    sunrise,
+    sunset,
+    brahmaMuhurta,
+    godhuliKaalReminderTime,
+    godhuliKaalTime,
+    pradoshaKaalReminderTime,
+    pradoshaKaalTime,
+  };
 }
