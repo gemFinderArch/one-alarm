@@ -1,9 +1,10 @@
 import { setAlarm, dismissAlarm } from 'expo-alarm';
-import { ALARM_MESSAGE } from '../lib/constants';
+import { ALARM_MESSAGE } from './constants';
 
 /**
  * Schedule a native alarm for the Brahma Muhurta time.
- * Uses expo-alarm's setAlarm to set the device alarm clock.
+ * Uses Android's AlarmClock ACTION_SET_ALARM intent via expo-alarm.
+ * The system alarm clock handles: screen wake, sound, vibration, dismiss UI.
  */
 export async function scheduleBrahmaMuhurtaAlarm(alarmTime: Date): Promise<void> {
   const hour = alarmTime.getHours();
@@ -19,8 +20,16 @@ export async function scheduleBrahmaMuhurtaAlarm(alarmTime: Date): Promise<void>
 }
 
 /**
- * Cancel the Brahma Muhurta alarm by dismissing the current alarm.
+ * Attempt to cancel the Brahma Muhurta alarm.
+ * Note: dismissAlarm sends ACTION_DISMISS_ALARM which dismisses a currently-ringing
+ * alarm. To truly "cancel" a future alarm, we re-set it with setAlarm which replaces
+ * the previous one - the system alarm app deduplicates by hour/minute/message.
+ * When disabling, we call this as a best-effort dismissal.
  */
 export async function cancelBrahmaMuhurtaAlarm(): Promise<void> {
-  await dismissAlarm();
+  try {
+    await dismissAlarm({ searchMode: 'android.label', extra: { 'android.intent.extra.alarm.MESSAGE': ALARM_MESSAGE } });
+  } catch {
+    // Best-effort: dismissAlarm may not cancel a future alarm on all devices
+  }
 }

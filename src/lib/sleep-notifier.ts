@@ -1,8 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { SLEEP_BEFORE_ALARM_HOURS } from './constants';
+
+let sleepNotificationId: string | null = null;
 
 /**
  * Set up the notification channel for sleep reminders (Android only).
+ * Also requests notification permissions.
  */
 export async function setupNotificationChannel(): Promise<void> {
   await Notifications.requestPermissionsAsync();
@@ -20,9 +24,18 @@ export async function setupNotificationChannel(): Promise<void> {
 /**
  * Schedule a notification reminding the user to go to sleep.
  * Returns the notification identifier for later cancellation.
+ * Skips scheduling if sleepTime is in the past.
  */
-export async function scheduleSleepReminder(sleepTime: Date): Promise<string> {
-  const wakeTime = new Date(sleepTime.getTime() + 9 * 60 * 60 * 1000);
+export async function scheduleSleepReminder(sleepTime: Date): Promise<string | null> {
+  // Don't schedule notifications for past times
+  if (sleepTime.getTime() <= Date.now()) {
+    return null;
+  }
+
+  // Cancel any existing sleep reminder first
+  await cancelSleepReminder();
+
+  const wakeTime = new Date(sleepTime.getTime() + SLEEP_BEFORE_ALARM_HOURS * 60 * 60 * 1000);
   const wakeTimeFormatted = wakeTime.toLocaleTimeString([], {
     hour: 'numeric',
     minute: '2-digit',
@@ -41,12 +54,16 @@ export async function scheduleSleepReminder(sleepTime: Date): Promise<string> {
     },
   });
 
+  sleepNotificationId = identifier;
   return identifier;
 }
 
 /**
- * Cancel all scheduled sleep reminder notifications.
+ * Cancel the scheduled sleep reminder notification.
  */
 export async function cancelSleepReminder(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  if (sleepNotificationId) {
+    await Notifications.cancelScheduledNotificationAsync(sleepNotificationId);
+    sleepNotificationId = null;
+  }
 }

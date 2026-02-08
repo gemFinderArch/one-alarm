@@ -2,7 +2,7 @@ import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { BACKGROUND_ALARM_TASK } from '../lib/constants';
 import { getLocation, getAlarmEnabled } from '../lib/storage';
-import { getAlarmTimes } from '../lib/sunrise';
+import { getNextAlarmTimes } from '../lib/sunrise';
 import { scheduleBrahmaMuhurtaAlarm } from '../lib/alarm-scheduler';
 import { scheduleSleepReminder, cancelSleepReminder } from '../lib/sleep-notifier';
 
@@ -16,11 +16,8 @@ export async function recalculateAndSchedule(): Promise<void> {
 
   if (!location || !enabled) return;
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-
-  const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
+  const times = getNextAlarmTimes(location.latitude, location.longitude);
+  if (!times) return;
 
   await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
   await cancelSleepReminder();

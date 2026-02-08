@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState } from 'react-native';
 import type { LocationData, AlarmTimes } from '../types';
-import { getAlarmTimes } from '../lib/sunrise';
+import { getNextAlarmTimes } from '../lib/sunrise';
 import { saveAlarmEnabled, getAlarmEnabled } from '../lib/storage';
 import { scheduleBrahmaMuhurtaAlarm, cancelBrahmaMuhurtaAlarm } from '../lib/alarm-scheduler';
 import { scheduleSleepReminder, cancelSleepReminder } from '../lib/sleep-notifier';
-
-function getTomorrow(): Date {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  return tomorrow;
-}
 
 export function useAlarmState(location: LocationData | null) {
   const [enabled, setEnabled] = useState<boolean>(false);
@@ -49,20 +42,18 @@ export function useAlarmState(location: LocationData | null) {
       return;
     }
 
-    const tomorrow = getTomorrow();
-    const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
+    const times = getNextAlarmTimes(location.latitude, location.longitude);
     setAlarmTimes(times);
-  }, [location]);
+  }, [location?.latitude, location?.longitude]);
 
   // Recalculate on app foreground (fixes stale times on new day)
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active' && location) {
-        const tomorrow = getTomorrow();
-        const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
+        const times = getNextAlarmTimes(location.latitude, location.longitude);
         setAlarmTimes(times);
 
-        if (enabledRef.current) {
+        if (enabledRef.current && times) {
           cancelBrahmaMuhurtaAlarm()
             .then(() => scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta))
             .catch(() => {});
@@ -74,7 +65,7 @@ export function useAlarmState(location: LocationData | null) {
     });
 
     return () => subscription.remove();
-  }, [location]);
+  }, [location?.latitude, location?.longitude]);
 
   const toggleAlarm = useCallback(async () => {
     if (!alarmTimes || toggling) return;
@@ -102,17 +93,16 @@ export function useAlarmState(location: LocationData | null) {
   const recalculate = useCallback(async () => {
     if (!location) return;
 
-    const tomorrow = getTomorrow();
-    const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
+    const times = getNextAlarmTimes(location.latitude, location.longitude);
     setAlarmTimes(times);
 
-    if (enabledRef.current) {
+    if (enabledRef.current && times) {
       await cancelBrahmaMuhurtaAlarm();
       await cancelSleepReminder();
       await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
       await scheduleSleepReminder(times.sleepTime);
     }
-  }, [location]);
+  }, [location?.latitude, location?.longitude]);
 
   return { enabled, alarmTimes, toggleAlarm, recalculate };
 }
