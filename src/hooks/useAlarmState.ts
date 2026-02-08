@@ -1,34 +1,43 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppState } from 'react-native';
 import type { LocationData, AlarmTimes } from '../types';
 import { getNextAlarmTimes } from '../lib/sunrise';
-import { saveAlarmEnabled, getAlarmEnabled } from '../lib/storage';
-import { scheduleBrahmaMuhurtaAlarm, cancelBrahmaMuhurtaAlarm } from '../lib/alarm-scheduler';
+import { saveAutoUpdate, getAutoUpdate, saveLastSynced, getLastSynced } from '../lib/storage';
+import {
+  scheduleBrahmaMuhurtaAlarm,
+  cancelBrahmaMuhurtaAlarm,
+  schedulePrepareForSleepAlarm,
+  cancelPrepareForSleepAlarm,
+} from '../lib/alarm-scheduler';
 import { scheduleSleepReminder, cancelSleepReminder } from '../lib/sleep-notifier';
+import { registerBackgroundAlarmTask, unregisterBackgroundAlarmTask } from '../tasks/recalculate-alarm';
 
 export function useAlarmState(location: LocationData | null) {
-  const [enabled, setEnabled] = useState<boolean>(false);
   const [alarmTimes, setAlarmTimes] = useState<AlarmTimes | null>(null);
-  const [toggling, setToggling] = useState(false);
-  const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
+  const [autoUpdate, setAutoUpdate] = useState<boolean>(false);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-  // Load enabled state from storage on mount
+  // Load auto-update and last-synced from storage on mount
   useEffect(() => {
     let cancelled = false;
 
-    async function loadEnabled() {
+    async function loadState() {
       try {
-        const savedEnabled = await getAlarmEnabled();
+        const [savedAutoUpdate, savedLastSynced] = await Promise.all([
+          getAutoUpdate(),
+          getLastSynced(),
+        ]);
         if (!cancelled) {
-          setEnabled(savedEnabled);
+          setAutoUpdate(savedAutoUpdate);
+          setLastSynced(savedLastSynced);
         }
       } catch {
-        // Default to false on error
+        // Defaults are fine
       }
     }
 
-    loadEnabled();
+    loadState();
 
     return () => {
       cancelled = true;
@@ -46,63 +55,80 @@ export function useAlarmState(location: LocationData | null) {
     setAlarmTimes(times);
   }, [location?.latitude, location?.longitude]);
 
-  // Recalculate on app foreground (fixes stale times on new day)
+  // Recalculate displayed times on app foreground.
+  // If autoUpdate is ON, also re-sync alarms.
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => {
+    const subscription = AppState.addEventListener('change', async (state) => {
       if (state === 'active' && location) {
         const times = getNextAlarmTimes(location.latitude, location.longitude);
         setAlarmTimes(times);
 
-        if (enabledRef.current && times) {
-          cancelBrahmaMuhurtaAlarm()
-            .then(() => scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta))
-            .catch(() => {});
-          cancelSleepReminder()
-            .then(() => scheduleSleepReminder(times.sleepTime))
-            .catch(() => {});
+        if (autoUpdate && times) {
+          try {
+            await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
+            await schedulePrepareForSleepAlarm(times.prepareForSleepTime);
+            await cancelSleepReminder();
+            await scheduleSleepReminder(times.prepareForSleepTime);
+            const now = new Date();
+            await saveLastSynced(now);
+            setLastSynced(now);
+          } catch {
+            // Best-effort foreground sync
+          }
         }
       }
     });
 
     return () => subscription.remove();
-  }, [location?.latitude, location?.longitude]);
+  }, [location?.latitude, location?.longitude, autoUpdate]);
 
-  const toggleAlarm = useCallback(async () => {
-    if (!alarmTimes || toggling) return;
+  const syncAlarms = useCallback(async () => {
+    if (!alarmTimes || syncing) return;
 
-    setToggling(true);
-    const newEnabled = !enabledRef.current;
-
+    setSyncing(true);
     try {
-      if (newEnabled) {
-        await scheduleBrahmaMuhurtaAlarm(alarmTimes.brahmaMuhurta);
-        await scheduleSleepReminder(alarmTimes.sleepTime);
-      } else {
-        await cancelBrahmaMuhurtaAlarm();
-        await cancelSleepReminder();
-      }
-      setEnabled(newEnabled);
-      await saveAlarmEnabled(newEnabled);
-    } catch {
-      // Revert on failure - don't change state
-    } finally {
-      setToggling(false);
-    }
-  }, [alarmTimes, toggling]);
-
-  const recalculate = useCallback(async () => {
-    if (!location) return;
-
-    const times = getNextAlarmTimes(location.latitude, location.longitude);
-    setAlarmTimes(times);
-
-    if (enabledRef.current && times) {
-      await cancelBrahmaMuhurtaAlarm();
+      await scheduleBrahmaMuhurtaAlarm(alarmTimes.brahmaMuhurta);
+      await schedulePrepareForSleepAlarm(alarmTimes.prepareForSleepTime);
       await cancelSleepReminder();
-      await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
-      await scheduleSleepReminder(times.sleepTime);
+      await scheduleSleepReminder(alarmTimes.prepareForSleepTime);
+      const now = new Date();
+      await saveLastSynced(now);
+      setLastSynced(now);
+    } catch {
+      // Sync failed - don't update timestamp
+    } finally {
+      setSyncing(false);
     }
-  }, [location?.latitude, location?.longitude]);
+  }, [alarmTimes, syncing]);
 
-  return { enabled, alarmTimes, toggleAlarm, recalculate };
+  const disableAlarms = useCallback(async () => {
+    if (syncing) return;
+
+    setSyncing(true);
+    try {
+      await cancelBrahmaMuhurtaAlarm();
+      await cancelPrepareForSleepAlarm();
+      await cancelSleepReminder();
+      setLastSynced(null);
+      await saveLastSynced(new Date(0));
+    } catch {
+      // Best-effort cancel
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing]);
+
+  const toggleAutoUpdate = useCallback(async () => {
+    const newValue = !autoUpdate;
+    setAutoUpdate(newValue);
+    await saveAutoUpdate(newValue);
+
+    if (newValue) {
+      await registerBackgroundAlarmTask();
+    } else {
+      await unregisterBackgroundAlarmTask();
+    }
+  }, [autoUpdate]);
+
+  return { alarmTimes, autoUpdate, lastSynced, syncAlarms, disableAlarms, toggleAutoUpdate };
 }

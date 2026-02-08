@@ -7,11 +7,11 @@ export interface LocationData {
 export interface AlarmTimes {
   sunrise: Date;
   brahmaMuhurta: Date;
+  prepareForSleepTime: Date;
   sleepTime: Date;
 }
 
 export interface AlarmState {
-  enabled: boolean;
   location: LocationData | null;
   alarmTimes: AlarmTimes | null;
 }
@@ -19,6 +19,8 @@ export interface AlarmState {
 export enum StorageKeys {
   LOCATION = 'one-alarm:location',
   ALARM_ENABLED = 'one-alarm:alarm-enabled',
+  AUTO_UPDATE = 'one-alarm:auto-update',
+  LAST_SYNCED = 'one-alarm:last-synced',
 }
 
 export type RootStackParamList = {

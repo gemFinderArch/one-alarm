@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import { Platform } from 'react-native';
 import { LocationData } from '../types';
 
 /**
@@ -6,18 +6,21 @@ import { LocationData } from '../types';
  * Returns true if permission was granted, false otherwise.
  */
 export async function requestLocationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  const Location = await import('expo-location');
   const { status } = await Location.requestForegroundPermissionsAsync();
   return status === 'granted';
 }
 
 /**
  * Get the device's current location via GPS.
- * Requests permission, obtains coordinates at city-level accuracy,
- * and reverse geocodes to determine the city name.
- * Returns null if permission is denied or an error occurs.
+ * Returns null on web.
  */
 export async function getCurrentLocation(): Promise<LocationData | null> {
+  if (Platform.OS === 'web') return null;
+
   try {
+    const Location = await import('expo-location');
     const granted = await requestLocationPermission();
     if (!granted) return null;
 

@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { SLEEP_BEFORE_ALARM_HOURS } from './constants';
 
@@ -6,9 +5,12 @@ let sleepNotificationId: string | null = null;
 
 /**
  * Set up the notification channel for sleep reminders (Android only).
- * Also requests notification permissions.
+ * No-op on web.
  */
 export async function setupNotificationChannel(): Promise<void> {
+  if (Platform.OS === 'web') return;
+
+  const Notifications = await import('expo-notifications');
   await Notifications.requestPermissionsAsync();
 
   if (Platform.OS === 'android') {
@@ -23,18 +25,18 @@ export async function setupNotificationChannel(): Promise<void> {
 
 /**
  * Schedule a notification reminding the user to go to sleep.
- * Returns the notification identifier for later cancellation.
- * Skips scheduling if sleepTime is in the past.
+ * No-op on web.
  */
 export async function scheduleSleepReminder(sleepTime: Date): Promise<string | null> {
-  // Don't schedule notifications for past times
+  if (Platform.OS === 'web') return null;
+
   if (sleepTime.getTime() <= Date.now()) {
     return null;
   }
 
-  // Cancel any existing sleep reminder first
   await cancelSleepReminder();
 
+  const Notifications = await import('expo-notifications');
   const wakeTime = new Date(sleepTime.getTime() + SLEEP_BEFORE_ALARM_HOURS * 60 * 60 * 1000);
   const wakeTimeFormatted = wakeTime.toLocaleTimeString([], {
     hour: 'numeric',
@@ -59,10 +61,13 @@ export async function scheduleSleepReminder(sleepTime: Date): Promise<string | n
 }
 
 /**
- * Cancel the scheduled sleep reminder notification.
+ * Cancel the scheduled sleep reminder notification. No-op on web.
  */
 export async function cancelSleepReminder(): Promise<void> {
+  if (Platform.OS === 'web') return;
+
   if (sleepNotificationId) {
+    const Notifications = await import('expo-notifications');
     await Notifications.cancelScheduledNotificationAsync(sleepNotificationId);
     sleepNotificationId = null;
   }

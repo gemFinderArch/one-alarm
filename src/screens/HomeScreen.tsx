@@ -23,7 +23,7 @@ type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { location, loading, reloadFromStorage } = useLocation();
-  const { enabled, alarmTimes, toggleAlarm } = useAlarmState(location);
+  const { alarmTimes, autoUpdate, lastSynced, syncAlarms, disableAlarms, toggleAutoUpdate } = useAlarmState(location);
 
   useEffect(() => {
     setupNotificationChannel();
@@ -72,14 +72,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <AlarmCard
           alarmTime={alarmTimes?.brahmaMuhurta ?? null}
-          enabled={enabled}
-          onToggle={toggleAlarm}
+          autoUpdate={autoUpdate}
+          lastSynced={lastSynced}
+          onSync={syncAlarms}
+          onDisable={disableAlarms}
+          onToggleAutoUpdate={toggleAutoUpdate}
         />
         <SunriseInfo
           sunriseTime={alarmTimes?.sunrise ?? null}
           city={location.city}
         />
-        <SleepReminder sleepTime={alarmTimes?.sleepTime ?? null} />
+        <SleepReminder
+          prepareForSleepTime={alarmTimes?.prepareForSleepTime ?? null}
+          sleepTime={alarmTimes?.sleepTime ?? null}
+        />
       </ScrollView>
       <TouchableOpacity
         style={styles.settingsLink}

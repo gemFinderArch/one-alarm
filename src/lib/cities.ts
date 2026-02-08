@@ -38,6 +38,7 @@ export const CITIES: City[] = [
   { name: 'Nairobi', country: 'Kenya', latitude: -1.2921, longitude: 36.8219 },
   { name: 'New York', country: 'United States', latitude: 40.7128, longitude: -74.006 },
   { name: 'Oslo', country: 'Norway', latitude: 59.9139, longitude: 10.7522 },
+  { name: 'Palermo', country: 'Italy', latitude: 38.1157, longitude: 13.3615 },
   { name: 'Paris', country: 'France', latitude: 48.8566, longitude: 2.3522 },
   { name: 'Phoenix', country: 'United States', latitude: 33.4484, longitude: -112.074 },
   { name: 'Pune', country: 'India', latitude: 18.5204, longitude: 73.8567 },

@@ -39,3 +39,41 @@ export async function getAlarmEnabled(): Promise<boolean> {
   }
   return JSON.parse(raw) as boolean;
 }
+
+/**
+ * Save the auto-update preference to persistent storage.
+ */
+export async function saveAutoUpdate(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(StorageKeys.AUTO_UPDATE, JSON.stringify(enabled));
+}
+
+/**
+ * Retrieve the auto-update preference from persistent storage.
+ * Defaults to false if no value has been saved.
+ */
+export async function getAutoUpdate(): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(StorageKeys.AUTO_UPDATE);
+  if (raw === null) {
+    return false;
+  }
+  return JSON.parse(raw) as boolean;
+}
+
+/**
+ * Save the last-synced timestamp to persistent storage.
+ */
+export async function saveLastSynced(date: Date): Promise<void> {
+  await AsyncStorage.setItem(StorageKeys.LAST_SYNCED, date.toISOString());
+}
+
+/**
+ * Retrieve the last-synced timestamp from persistent storage.
+ * Returns null if never synced.
+ */
+export async function getLastSynced(): Promise<Date | null> {
+  const raw = await AsyncStorage.getItem(StorageKeys.LAST_SYNCED);
+  if (raw === null) {
+    return null;
+  }
+  return new Date(raw);
+}

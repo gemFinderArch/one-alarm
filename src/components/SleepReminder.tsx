@@ -3,16 +3,24 @@ import { View, Text, StyleSheet } from 'react-native';
 import { formatTime } from '../lib/format';
 
 interface SleepReminderProps {
+  prepareForSleepTime: Date | null;
   sleepTime: Date | null;
 }
 
-export default function SleepReminder({ sleepTime }: SleepReminderProps) {
+export default function SleepReminder({ prepareForSleepTime, sleepTime }: SleepReminderProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{'\u263D'}</Text>
       <View style={styles.textContainer}>
-        <Text style={styles.label}>Sleep by</Text>
-        <Text style={styles.time}>{formatTime(sleepTime)}</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Prepare for Sleep</Text>
+          <Text style={styles.time}>{formatTime(prepareForSleepTime)}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.row}>
+          <Text style={styles.label}>Sleep by</Text>
+          <Text style={styles.time}>{formatTime(sleepTime)}</Text>
+        </View>
       </View>
     </View>
   );
@@ -31,9 +39,21 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 32,
     marginRight: 16,
+    alignSelf: 'flex-start',
+    marginTop: 4,
   },
   textContainer: {
     flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#333333',
+    marginVertical: 10,
   },
   label: {
     fontSize: 13,
@@ -41,7 +61,6 @@ const styles = StyleSheet.create({
     color: '#999999',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 4,
   },
   time: {
     fontSize: 24,

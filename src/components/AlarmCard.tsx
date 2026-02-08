@@ -1,34 +1,77 @@
 import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
 import { formatTime } from '../lib/format';
 
 interface AlarmCardProps {
   alarmTime: Date | null;
-  enabled: boolean;
-  onToggle: () => void;
+  autoUpdate: boolean;
+  lastSynced: Date | null;
+  onSync: () => void;
+  onDisable: () => void;
+  onToggleAutoUpdate: () => void;
 }
 
-export default function AlarmCard({ alarmTime, enabled, onToggle }: AlarmCardProps) {
+function formatLastSynced(date: Date | null): string {
+  if (!date || date.getTime() === 0) return 'Not synced';
+
+  const now = new Date();
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  if (isToday) return `Last synced: today ${time}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+
+  if (isYesterday) return `Last synced: yesterday ${time}`;
+
+  const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return `Last synced: ${dateStr} ${time}`;
+}
+
+export default function AlarmCard({
+  alarmTime,
+  autoUpdate,
+  lastSynced,
+  onSync,
+  onDisable,
+  onToggleAutoUpdate,
+}: AlarmCardProps) {
   return (
-    <View style={[styles.card, enabled ? styles.cardEnabled : styles.cardDisabled]}>
-      <Text style={[styles.label, enabled ? styles.labelEnabled : styles.labelDisabled]}>
-        Brahma Muhurta
-      </Text>
-      <Text style={[styles.time, enabled ? styles.timeEnabled : styles.timeDisabled]}>
-        {formatTime(alarmTime)}
-      </Text>
-      <View style={styles.toggleRow}>
-        <Text style={[styles.toggleLabel, enabled ? styles.toggleLabelEnabled : styles.toggleLabelDisabled]}>
-          {enabled ? 'Alarm On' : 'Alarm Off'}
-        </Text>
+    <View style={styles.card}>
+      <Text style={styles.label}>Brahma Muhurta</Text>
+      <Text style={styles.time}>{formatTime(alarmTime)}</Text>
+
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.syncButton} onPress={onSync} activeOpacity={0.7}>
+          <Text style={styles.syncButtonText}>Sync</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.disableButton} onPress={onDisable} activeOpacity={0.7}>
+          <Text style={styles.disableButtonText}>Disable</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.autoUpdateRow}>
+        <Text style={styles.autoUpdateLabel}>Auto-Update</Text>
         <Switch
-          value={enabled}
-          onValueChange={onToggle}
+          value={autoUpdate}
+          onValueChange={onToggleAutoUpdate}
           trackColor={{ false: '#333333', true: '#FFB800' }}
-          thumbColor={enabled ? '#FFFFFF' : '#888888'}
-          accessibilityLabel="Toggle Brahma Muhurta alarm"
+          thumbColor={autoUpdate ? '#FFFFFF' : '#888888'}
+          style={styles.autoUpdateSwitch}
+          accessibilityLabel="Toggle automatic alarm updates"
         />
       </View>
+
+      <Text style={styles.status}>{formatLastSynced(lastSynced)}</Text>
     </View>
   );
 }
@@ -40,13 +83,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 20,
     marginTop: 20,
-  },
-  cardEnabled: {
-    backgroundColor: '#1A1A1A',
-    borderWidth: 1,
-    borderColor: '#FFB800',
-  },
-  cardDisabled: {
     backgroundColor: '#1A1A1A',
     borderWidth: 1,
     borderColor: '#333333',
@@ -57,37 +93,59 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 8,
-  },
-  labelEnabled: {
     color: '#FFB800',
-  },
-  labelDisabled: {
-    color: '#999999',
   },
   time: {
     fontSize: 56,
     fontWeight: '200',
     marginBottom: 20,
-  },
-  timeEnabled: {
     color: '#FFFFFF',
   },
-  timeDisabled: {
-    color: '#999999',
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
   },
-  toggleRow: {
+  syncButton: {
+    backgroundColor: '#FFB800',
+    borderRadius: 10,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+  },
+  syncButtonText: {
+    color: '#0D0D0D',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  disableButton: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 10,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#444444',
+  },
+  disableButtonText: {
+    color: '#999999',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  autoUpdateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    marginBottom: 12,
   },
-  toggleLabel: {
-    fontSize: 14,
+  autoUpdateLabel: {
+    fontSize: 13,
     fontWeight: '500',
-  },
-  toggleLabelEnabled: {
-    color: '#FFB800',
-  },
-  toggleLabelDisabled: {
     color: '#999999',
+  },
+  autoUpdateSwitch: {
+    transform: [{ scale: 0.8 }],
+  },
+  status: {
+    fontSize: 12,
+    color: '#666666',
   },
 });
