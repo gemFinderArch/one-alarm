@@ -18,6 +18,7 @@ export async function recalculateAndSchedule(): Promise<void> {
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
 
   const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
 

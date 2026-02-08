@@ -8,14 +8,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types';
 import { useLocation } from '../hooks/useLocation';
 import CityPicker from '../components/CityPicker';
 import type { City } from '../lib/cities';
-
-type RootStackParamList = {
-  Home: undefined;
-  Settings: undefined;
-};
 
 type SettingsScreenProps = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -97,7 +93,7 @@ const styles = StyleSheet.create({
   currentLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#888888',
+    color: '#999999',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 6,
@@ -110,7 +106,7 @@ const styles = StyleSheet.create({
   },
   coordinates: {
     fontSize: 13,
-    color: '#888888',
+    color: '#999999',
   },
   detectButton: {
     backgroundColor: '#FFB800',
@@ -146,7 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#333333',
   },
   dividerText: {
-    color: '#888888',
+    color: '#999999',
     fontSize: 13,
     marginHorizontal: 12,
   },

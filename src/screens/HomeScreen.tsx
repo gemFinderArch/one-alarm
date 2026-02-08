@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,27 +9,33 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
+import type { RootStackParamList } from '../types';
 import { useLocation } from '../hooks/useLocation';
 import { useAlarmState } from '../hooks/useAlarmState';
 import { setupNotificationChannel } from '../lib/sleep-notifier';
+import { registerBackgroundAlarmTask } from '../tasks/recalculate-alarm';
 import AlarmCard from '../components/AlarmCard';
 import SunriseInfo from '../components/SunriseInfo';
 import SleepReminder from '../components/SleepReminder';
 
-type RootStackParamList = {
-  Home: undefined;
-  Settings: undefined;
-};
-
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
-  const { location, loading } = useLocation();
+  const { location, loading, reloadFromStorage } = useLocation();
   const { enabled, alarmTimes, toggleAlarm } = useAlarmState(location);
 
   useEffect(() => {
     setupNotificationChannel();
+    registerBackgroundAlarmTask().catch(() => {});
   }, []);
+
+  // Reload location from storage when screen gains focus (after Settings changes)
+  useFocusEffect(
+    useCallback(() => {
+      reloadFromStorage();
+    }, [reloadFromStorage])
+  );
 
   if (loading) {
     return (
@@ -62,7 +68,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <AlarmCard
           alarmTime={alarmTimes?.brahmaMuhurta ?? null}
@@ -71,13 +77,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         />
         <SunriseInfo
           sunriseTime={alarmTimes?.sunrise ?? null}
-          city={location.city ?? null}
+          city={location.city}
         />
         <SleepReminder sleepTime={alarmTimes?.sleepTime ?? null} />
       </ScrollView>
       <TouchableOpacity
         style={styles.settingsLink}
         onPress={() => navigation.navigate('Settings')}
+        hitSlop={{ top: 8, bottom: 8 }}
       >
         <Text style={styles.settingsLinkText}>Settings</Text>
       </TouchableOpacity>
@@ -97,7 +104,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   loadingText: {
-    color: '#888888',
+    color: '#999999',
     fontSize: 16,
     marginTop: 12,
   },
@@ -109,7 +116,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   promptText: {
-    color: '#888888',
+    color: '#999999',
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
@@ -131,12 +138,12 @@ const styles = StyleSheet.create({
   },
   settingsLink: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#333333',
   },
   settingsLinkText: {
-    color: '#888888',
+    color: '#999999',
     fontSize: 15,
     fontWeight: '500',
   },

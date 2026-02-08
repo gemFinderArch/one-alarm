@@ -81,5 +81,14 @@ export function useLocation() {
     }
   }, []);
 
-  return { location, loading, error, setLocationFromGPS, setLocationFromCity };
+  const reloadFromStorage = useCallback(async () => {
+    try {
+      const saved = await getLocation();
+      setLocation(saved);
+    } catch {
+      // Keep current location on error
+    }
+  }, []);
+
+  return { location, loading, error, setLocationFromGPS, setLocationFromCity, reloadFromStorage };
 }

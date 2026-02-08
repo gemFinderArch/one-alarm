@@ -26,7 +26,8 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.gemfinderarch.onealarm"
     },
@@ -35,6 +36,12 @@
       "expo-notifications",
       "expo-background-fetch",
       "expo-task-manager"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7fe8ed54-ea24-4fba-a9cd-9ba37f54b2af"
+      }
+    },
+    "owner": "g.orbeliani"
   }
 }

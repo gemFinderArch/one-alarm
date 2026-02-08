@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
  * Set up the notification channel for sleep reminders (Android only).
  */
 export async function setupNotificationChannel(): Promise<void> {
+  await Notifications.requestPermissionsAsync();
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('sleep-reminder', {
       name: 'Sleep Reminder',

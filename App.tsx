@@ -2,13 +2,10 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-
-type RootStackParamList = {
-  Home: undefined;
-  Settings: undefined;
-};
+import { RootStackParamList } from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -28,7 +25,7 @@ const DarkTheme = {
 
 export default function App() {
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
       <NavigationContainer theme={DarkTheme}>
         <Stack.Navigator
@@ -51,6 +48,6 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
-    </>
+    </SafeAreaProvider>
   );
 }

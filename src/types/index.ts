@@ -20,3 +20,8 @@ export enum StorageKeys {
   LOCATION = 'one-alarm:location',
   ALARM_ENABLED = 'one-alarm:alarm-enabled',
 }
+
+export type RootStackParamList = {
+  Home: undefined;
+  Settings: undefined;
+};

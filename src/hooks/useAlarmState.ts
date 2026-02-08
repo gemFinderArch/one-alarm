@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 import type { LocationData, AlarmTimes } from '../types';
 import { getAlarmTimes } from '../lib/sunrise';
 import { saveAlarmEnabled, getAlarmEnabled } from '../lib/storage';
@@ -15,6 +16,9 @@ function getTomorrow(): Date {
 export function useAlarmState(location: LocationData | null) {
   const [enabled, setEnabled] = useState<boolean>(false);
   const [alarmTimes, setAlarmTimes] = useState<AlarmTimes | null>(null);
+  const [toggling, setToggling] = useState(false);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   // Load enabled state from storage on mount
   useEffect(() => {
@@ -50,21 +54,50 @@ export function useAlarmState(location: LocationData | null) {
     setAlarmTimes(times);
   }, [location]);
 
+  // Recalculate on app foreground (fixes stale times on new day)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && location) {
+        const tomorrow = getTomorrow();
+        const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
+        setAlarmTimes(times);
+
+        if (enabledRef.current) {
+          cancelBrahmaMuhurtaAlarm()
+            .then(() => scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta))
+            .catch(() => {});
+          cancelSleepReminder()
+            .then(() => scheduleSleepReminder(times.sleepTime))
+            .catch(() => {});
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [location]);
+
   const toggleAlarm = useCallback(async () => {
-    if (!alarmTimes) return;
+    if (!alarmTimes || toggling) return;
 
-    const newEnabled = !enabled;
-    setEnabled(newEnabled);
-    await saveAlarmEnabled(newEnabled);
+    setToggling(true);
+    const newEnabled = !enabledRef.current;
 
-    if (newEnabled) {
-      await scheduleBrahmaMuhurtaAlarm(alarmTimes.brahmaMuhurta);
-      await scheduleSleepReminder(alarmTimes.sleepTime);
-    } else {
-      await cancelBrahmaMuhurtaAlarm();
-      await cancelSleepReminder();
+    try {
+      if (newEnabled) {
+        await scheduleBrahmaMuhurtaAlarm(alarmTimes.brahmaMuhurta);
+        await scheduleSleepReminder(alarmTimes.sleepTime);
+      } else {
+        await cancelBrahmaMuhurtaAlarm();
+        await cancelSleepReminder();
+      }
+      setEnabled(newEnabled);
+      await saveAlarmEnabled(newEnabled);
+    } catch {
+      // Revert on failure - don't change state
+    } finally {
+      setToggling(false);
     }
-  }, [enabled, alarmTimes]);
+  }, [alarmTimes, toggling]);
 
   const recalculate = useCallback(async () => {
     if (!location) return;
@@ -73,11 +106,13 @@ export function useAlarmState(location: LocationData | null) {
     const times = getAlarmTimes(tomorrow, location.latitude, location.longitude);
     setAlarmTimes(times);
 
-    if (enabled) {
+    if (enabledRef.current) {
+      await cancelBrahmaMuhurtaAlarm();
+      await cancelSleepReminder();
       await scheduleBrahmaMuhurtaAlarm(times.brahmaMuhurta);
       await scheduleSleepReminder(times.sleepTime);
     }
-  }, [location, enabled]);
+  }, [location]);
 
   return { enabled, alarmTimes, toggleAlarm, recalculate };
 }

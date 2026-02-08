@@ -1,15 +1,11 @@
 import React from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
+import { formatTime } from '../lib/format';
 
 interface AlarmCardProps {
   alarmTime: Date | null;
   enabled: boolean;
   onToggle: () => void;
-}
-
-function formatTime(date: Date | null): string {
-  if (!date) return '--:--';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 export default function AlarmCard({ alarmTime, enabled, onToggle }: AlarmCardProps) {
@@ -30,6 +26,7 @@ export default function AlarmCard({ alarmTime, enabled, onToggle }: AlarmCardPro
           onValueChange={onToggle}
           trackColor={{ false: '#333333', true: '#FFB800' }}
           thumbColor={enabled ? '#FFFFFF' : '#888888'}
+          accessibilityLabel="Toggle Brahma Muhurta alarm"
         />
       </View>
     </View>
@@ -65,7 +62,7 @@ const styles = StyleSheet.create({
     color: '#FFB800',
   },
   labelDisabled: {
-    color: '#888888',
+    color: '#999999',
   },
   time: {
     fontSize: 56,
@@ -76,7 +73,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   timeDisabled: {
-    color: '#888888',
+    color: '#999999',
   },
   toggleRow: {
     flexDirection: 'row',
@@ -91,6 +88,6 @@ const styles = StyleSheet.create({
     color: '#FFB800',
   },
   toggleLabelDisabled: {
-    color: '#888888',
+    color: '#999999',
   },
 });

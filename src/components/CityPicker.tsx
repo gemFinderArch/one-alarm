@@ -18,9 +18,11 @@ export default function CityPicker({ onSelect, visible }: CityPickerProps) {
   const [search, setSearch] = useState('');
 
   const filteredCities = search.length > 0
-    ? CITIES.filter((city) =>
-        city.name.toLowerCase().includes(search.toLowerCase())
-      )
+    ? CITIES.filter((city) => {
+        const query = search.toLowerCase();
+        return city.name.toLowerCase().includes(query) ||
+               city.country.toLowerCase().includes(query);
+      })
     : CITIES;
 
   const handleSelect = useCallback(
@@ -33,7 +35,12 @@ export default function CityPicker({ onSelect, visible }: CityPickerProps) {
 
   const renderItem = useCallback(
     ({ item }: { item: City }) => (
-      <TouchableOpacity style={styles.row} onPress={() => handleSelect(item)}>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => handleSelect(item)}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ${item.country}`}
+      >
         <Text style={styles.cityName}>{item.name}</Text>
         <Text style={styles.country}>{item.country}</Text>
       </TouchableOpacity>
@@ -65,6 +72,9 @@ export default function CityPicker({ onSelect, visible }: CityPickerProps) {
         keyExtractor={keyExtractor}
         style={styles.list}
         keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No cities found</Text>
+        }
       />
     </View>
   );
@@ -107,6 +117,12 @@ const styles = StyleSheet.create({
   },
   country: {
     fontSize: 14,
-    color: '#888888',
+    color: '#999999',
+  },
+  emptyText: {
+    color: '#999999',
+    fontSize: 15,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });

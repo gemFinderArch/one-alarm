@@ -1,14 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { formatTime } from '../lib/format';
 
 interface SunriseInfoProps {
   sunriseTime: Date | null;
   city: string | null;
-}
-
-function formatTime(date: Date | null): string {
-  if (!date) return '--:--';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 export default function SunriseInfo({ sunriseTime, city }: SunriseInfoProps) {
@@ -42,9 +38,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#888888',
+    color: '#999999',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
@@ -56,7 +52,7 @@ const styles = StyleSheet.create({
   },
   city: {
     fontSize: 13,
-    color: '#888888',
+    color: '#999999',
     marginTop: 2,
   },
 });
