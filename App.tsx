@@ -39,7 +39,7 @@ export default function App() {
           <Stack.Screen
             name="Home"
             component={HomeScreen}
-            options={{ title: 'One Alarm', headerShown: false }}
+            options={{ title: 'TEST One Alarm', headerShown: false }}
           />
           <Stack.Screen
             name="Settings"
